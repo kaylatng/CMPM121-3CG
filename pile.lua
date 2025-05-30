@@ -15,7 +15,7 @@ function PileClass:new(x, y, pileType, owner)
   pile.type = pileType -- Possible types: deck, hand, board, discard
   pile.size = Vector(Constants.PILE_WIDTH, Constants.PILE_HEIGHT)
 
-  pile.owner = owner or "player"
+  pile.owner = owner or "player" -- Possible types: ai or player
   pile.highlighted = false -- For showing valid drop targets
   
   return pile
@@ -77,7 +77,7 @@ function PileClass:draw()
     -- Show "DROP HERE" text for highlighted piles
     if self.highlighted then
       love.graphics.setColor(0.2, 0.8, 0.2, 1)
-      love.graphics.print("DROP HERE", self.position.x + 15, self.position.y + Constants.PILE_HEIGHT + 5)
+      love.graphics.print("DROP HERE", self.position.x - 6, self.position.y + Constants.PILE_HEIGHT + 5)
     end
   end
 
@@ -156,10 +156,18 @@ function PileClass:updateCardPositions()
           self.position.x + (index - 1) * self.horizontalOffset, 
           self.position.y
         )
-        card.faceUp = true
+        if self.owner == "ai" then
+          card:setFaceDown()
+        else
+          card:setFaceUp()
+        end
       else
         newPos = Vector(self.position.x, self.position.y)
-        card.faceUp = true
+        if self.owner == "ai" then
+          card:setFaceDown()
+        else
+          card:setFaceUp()
+        end
       end
       
       card.targetPosition = newPos
@@ -229,6 +237,8 @@ function DeckPile:draw()
 end
 
 function DeckPile:onClick()
+  if self.owner == "ai" then return end
+
   local cardsToMove = math.min(1, #self.cards)
 
   if #self.handPile.cards >= 7 then

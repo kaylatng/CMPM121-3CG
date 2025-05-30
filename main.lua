@@ -12,7 +12,7 @@ require "pile"
 require "game"
 local Constants = require("constants")
 
-local background = {0.38, 0.5, 0.47, 0.8} -- dark green
+local background = {0.38, 0.5, 0.47, 0.8} -- Dark green
 local font
 
 function love.load()
@@ -20,7 +20,7 @@ function love.load()
   love.window.setTitle("3CG") -- kairos
   love.graphics.setBackgroundColor(background)
 
-  font = love.graphics.newFont("assets/slkscr.ttf", 20)
+  font = love.graphics.newFont("assets/slkscr.ttf", 18)
   love.graphics.setFont(font)
   
   -- math.randomseed(os.time())

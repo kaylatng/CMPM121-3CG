@@ -5,6 +5,7 @@ require "card"
 require "pile"
 require "selector"
 require "button"
+require "mana"
 
 local Constants = require ("constants")
 local Data = require ("data")
@@ -17,11 +18,13 @@ function GameManager:new()
   setmetatable(game, metadata)
 
   game.piles = {}
+  game.manas = {}
   game.selector = SelectorClass:new()
   game.isInitialized = false
   game.moves = 0
   game.won = false
   game.state = Constants.GAME_STATE.YOUR_TURN
+  game.round = 0
 
   game.endTurnButton = ButtonClass:new(game.state)
   
@@ -31,27 +34,44 @@ end
 function GameManager:initialize()
   if self.isInitialized then return end
 
-  local hand = HandPile:new(900, 800)
+  -- Player
+  local hand = HandPile:new(1300, 800)
   table.insert(self.piles, hand)
 
   local stock = DeckPile:new(40, 800, hand)
   table.insert(self.piles, stock)
 
   local deck = self:createDeck()
-  self:dealCards(deck, hand, self.piles)
+  self:dealCards(deck, hand, self.piles, "player")
 
-  -- player board
   for i = 1, 4 do
-    local boardPile = BoardPile:new(400 + (i-1) * 130, 400, i)
+    local boardPile = BoardPile:new(700 + (i-1) * 130, 400, i)
     table.insert(self.piles, boardPile)
   end
 
-  -- ai board
+  local playerMana = ManaClass:new(80, 678)
+  table.insert(self.manas, playerMana)
+
+  -- AI
+  local aiHand = HandPile:new(1300, 80, "ai")
+  table.insert(self.piles, aiHand)
+
+  local aiStock = DeckPile:new(40, 80, hand, "ai")
+  table.insert(self.piles, aiStock)
+
+  local aiDeck = self:createDeck()
+  self:dealCards(aiDeck, aiHand, self.piles, "ai")
+
   for i = 1, 4 do
-    local boardPile = BoardPile:new(400 + (i-1) * 130, 100, i, "ai")
+    local boardPile = BoardPile:new(700 + (i-1) * 130, 80, i, "ai")
     table.insert(self.piles, boardPile)
   end
 
+  local aiMana = ManaClass:new(80, 305, "ai")
+  table.insert(self.manas, aiMana)
+
+  -- Game variables
+  self.round = 1
   self.isInitialized = true
 end
 
@@ -77,12 +97,12 @@ function GameManager:createDeck()
   return deck
 end
 
-function GameManager:dealCards(deck, hand, piles)
+function GameManager:dealCards(deck, hand, piles, owner)
   local stockPile = nil
   local handPile = hand
 
   for _, pile in ipairs(piles) do
-    if pile.type == "deck" then
+    if pile.type == "deck" and pile.owner == owner then
       stockPile = pile
     end
   end
@@ -95,7 +115,11 @@ function GameManager:dealCards(deck, hand, piles)
     local card = stockPile:getTopCard()
     stockPile:removeCard(card)
     handPile:addCard(card)
-    card:setFaceUp()
+    if owner == "player" then
+      card:setFaceUp()
+    else
+      card:setFaceDown()
+    end
   end
 end
 
@@ -131,6 +155,10 @@ function GameManager:draw()
     pile:draw()
   end
 
+  for _, mana in ipairs(self.manas) do
+    mana:draw()
+  end
+
   -- Draw selection status
   love.graphics.setColor(0, 0, 0, 1)
   love.graphics.print("Mouse: " .. tostring(love.mouse.getX()) .. ", " .. tostring(love.mouse.getY()))
@@ -144,38 +172,65 @@ function GameManager:draw()
     love.graphics.setColor(0, 0, 0, 0.7)
     love.graphics.print("Tap on a card to select it", 0, 20)
   end
+
+  love.graphics.setColor(0, 0, 0, 1)
+  love.graphics.print("ROUND: " .. tostring(self.round), 20, Constants.WINDOW_HEIGHT / 2 - 10)
 end
 
 function GameManager:mousePressed(x, y, button)
   local mousePos = Vector(x, y)
+  local mp
+  
+  -- Get player mana
+  for _, mana in ipairs(self.manas) do
+    if mana.owner == "player" then
+      mp = mana.mp
+    end
+  end
 
   -- Check end turn button
   if self.endTurnButton:checkForMouseOver(mousePos) then
     if self.endTurnButton:mousePressed() then
       self.state = Constants.GAME_STATE.AI_TURN
       self.endTurnButton.gamestate = Constants.GAME_STATE.AI_TURN
-      -- Clear any selection when ending turn
+      self.round = self.round + 1
+
+      for _, mana in ipairs(self.manas) do
+        mana:setMana(self.round)
+      end
+
       self.selector:deselectCard()
+
+      self:aiPlay()
+
+      self.state = Constants.GAME_STATE.YOUR_TURN
+      self.endTurnButton.gamestate = Constants.GAME_STATE.YOUR_TURN
     end
     return
   end
 
   -- Handle card selection and placement
   if self.selector:hasSelection() then
-    -- Try to place the selected card
     local targetPile = self:getPileAt(mousePos)
+    local selectedCard = self.selector:getSelectedCard()
+    
     if targetPile and self.selector:tryPlaceCard(targetPile) then
+      if not selectedCard.wasPlaced then
+        for _, mana in ipairs(self.manas) do
+          if mana.owner == "player" then
+            mana:useMana(selectedCard.cost)
+          end
+        end
+      end
+      selectedCard.wasPlaced = true
       self.moves = self.moves + 1
       return
     else
-      -- If clicked somewhere invalid, deselect the card
       self.selector:deselectCard()
     end
-  else
-    -- Try to select a card
+  else -- Nothing selected
     for _, pile in ipairs(self.piles) do
-      if pile:checkForMouseOver(mousePos) then
-        -- Handle deck click
+      if pile:checkForMouseOver(mousePos) and pile.owner == "player" then
         if pile.type == "deck" then
           pile:onClick()
           return
@@ -183,9 +238,16 @@ function GameManager:mousePressed(x, y, button)
 
         -- Try to select a card
         local card = pile:getCardAt(mousePos)
-        if card and card.faceUp and pile.owner == "player" then
-          self.selector:selectCard(card, pile)
+        if card and card.faceUp then
+          -- Card was played before, mana cost paid
+          if card.wasPlaced then 
+            self.selector:selectCard(card, pile)
+          elseif card.cost <= mp then
+            self.selector:selectCard(card, pile)
+          end
           return
+        else
+          print("Not enough mana")
         end
       end
     end
@@ -206,6 +268,75 @@ function GameManager:mouseReleased(x, y, button)
 
   if self.endTurnButton:checkForMouseOver(mousePosButton) then
     self.endTurnButton:mouseReleased()
+  end
+end
+
+function GameManager:aiPlay()
+  local deckPile, handPile, aiMan = nil
+  local boardPiles = {}
+
+  for _, pile in ipairs(self.piles) do
+    if pile.owner == "ai" then
+      if pile.type == "deck" then
+        deckPile = pile
+      elseif pile.type == "hand" then
+        handPile = pile
+      elseif pile.type == "board" then
+         table.insert(boardPiles, pile)
+      end
+    end
+  end
+
+  for _, mana in ipairs(self.manas) do
+    if mana.owner == "ai" then
+      aiMana = mana
+    end
+  end
+
+  local cardsToPlay = {}
+  for _, card in ipairs(handPile.cards) do
+    if card.cost <= aiMana.mp and not card.wasPlaced then
+      table.insert(cardsToPlay, card)
+    end
+    -- TODO: modify depending on difficulty
+    -- if #cardsToPlay >= 3 then break end
+    if aiMana.mp == 0 then break end
+  end
+
+  for i, card in ipairs(cardsToPlay) do
+    for _, boardPile in ipairs(boardPiles) do
+      if #boardPile.cards == 0 then
+        boardPile:addCard(card)
+        card.wasPlaced = true
+        card:setFaceUp()
+        aiMana:useMana(card.cost)
+        handPile:removeCard(card)
+        break
+      end
+    end
+  end
+end
+
+function GameManager:drawCardFor(owner)
+  local deckPile, handPile
+
+  for _, pile in ipairs(self.piles) do
+    if pile.owner == owner then
+      if pile.type == "deck" then
+        deckPile = pile
+      elseif pile.type == "hand" then
+        handPile = pile
+      end
+    end
+  end
+
+  if deckPile and handPile and #deckPile.cards > 0 then
+    local card = deckPile:getTopCard()
+    if card then
+      deckPile:removeCard(card)
+      handPile:addCard(card)
+      card:setFaceUp()
+    end
   end
 end
 

@@ -45,9 +45,10 @@ function CardClass:new(name, cardType, cost, power, text, id, xPos, yPos, faceUp
 
   card.faceUp = faceUp or false
   card.inPlay = inPlay or false
+  card.wasPlaced = false
 
   card.state = CARD_STATE.IDLE
-  card.hoverOffset = 30
+  card.hoverOffset = 15
   card.selectOffset = 15
   card.zOrder = 0
 
@@ -107,17 +108,11 @@ function CardClass:draw()
       love.graphics.setLineWidth(4)
       love.graphics.rectangle("line", self.position.x - 2, self.position.y - 2, self.size.x + 4, self.size.y + 4, Constants.CARD_RADIUS, Constants.CARD_RADIUS)
       if self.faceUp then
-      font = love.graphics.newFont("assets/slkscr.ttf", 20)
-      love.graphics.setFont(font)
-      text = true
+        font = love.graphics.newFont("assets/slkscr.ttf", 20)
+        love.graphics.setFont(font)
+        text = true
+      end
     end
-    end
-
-    -- if self.faceUp then
-    --   font = love.graphics.newFont("assets/slkscr.ttf", 20)
-    --   love.graphics.setFont(font)
-    --   text = true
-    -- end
   end
   
   love.graphics.setColor(1, 1, 1, 1)
@@ -145,8 +140,8 @@ function CardClass:draw()
   love.graphics.setColor(0, 0, 0, 1)
 
   if text then
-    love.graphics.printf(tostring(self.name), Constants.WINDOW_WIDTH / 2 - 450, Constants.WINDOW_HEIGHT - 200, 200)
-    love.graphics.printf(tostring(self.text), Constants.WINDOW_WIDTH / 2 - 450, Constants.WINDOW_HEIGHT - 150, 300)
+    love.graphics.printf(tostring(self.name), Constants.WINDOW_WIDTH / 2 - 700, Constants.WINDOW_HEIGHT - 200, 200)
+    love.graphics.printf(tostring(self.text), Constants.WINDOW_WIDTH / 2 - 700, Constants.WINDOW_HEIGHT - 150, 300)
   end
 
   font = love.graphics.newFont("assets/slkscr.ttf", 20)
@@ -155,7 +150,7 @@ function CardClass:draw()
   -- Debug info
   if self.state == CARD_STATE.SELECTED then
     love.graphics.setColor(0.2, 0.8, 1, 1)
-    love.graphics.print("SELECTED", self.position.x + 10, self.position.y - 30)
+    love.graphics.print("SELECTED", self.position.x + 5, self.position.y - 30)
   end
   love.graphics.setColor(0, 0, 0, 1)
 end

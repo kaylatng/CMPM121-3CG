@@ -7,8 +7,8 @@ Vector = {}
 metatable = { -- Define Vector meta methods
   __call = function(self, a, b)
     local vec = {
-      x = a or 0, -- if a or b are not given, it will default to 0
-      y = b or 0  -- for more info, look up "lua ternary operator"
+      x = a or 0, -- If a or b are not given, it will default to 0
+      y = b or 0
     }
     setmetatable(vec, metatable)
     return vec
