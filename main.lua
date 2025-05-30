@@ -7,12 +7,11 @@
 io.stdout:setvbuf("no")
 
 require "card"
-require "grabber"
+require "selector"
 require "pile"
 require "game"
 local Constants = require("constants")
 
--- local background = {0.78, 0.85, 0.94, 0.8} -- sky blue
 local background = {0.38, 0.5, 0.47, 0.8} -- dark green
 local font
 
