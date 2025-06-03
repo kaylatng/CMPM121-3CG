@@ -6,6 +6,7 @@ require "pile"
 require "selector"
 require "button"
 require "mana"
+require "score"
 
 local Constants = require ("constants")
 local Data = require ("data")
@@ -19,15 +20,29 @@ function GameManager:new()
 
   game.piles = {}
   game.manas = {}
+  game.scores = {}
   game.selector = SelectorClass:new()
   game.isInitialized = false
   game.moves = 0
   game.won = false
   game.state = Constants.GAME_STATE.YOUR_TURN
   game.round = 0
+  game.roundStart = false
 
   game.endTurnButton = ButtonClass:new(game.state)
-  
+  game.canDraw = false
+  game.winner = nil
+
+  -- AI turn variables
+  game.aiDuration = 1
+  game.aiTimer = 1
+  game.aiState = Constants.AI_STATE.IDLE
+
+  -- Attack phase variables
+  game.cardsRevealed = false
+  game.attackDuration = 2
+  game.attackTimer = 2
+
   return game
 end
 
@@ -52,6 +67,9 @@ function GameManager:initialize()
   local playerMana = ManaClass:new(80, 678)
   table.insert(self.manas, playerMana)
 
+  local playerScore = ScoreClass:new(40, 590, "player")
+  table.insert(self.scores, playerScore)
+
   -- AI
   local aiHand = HandPile:new(1300, 80, "ai")
   table.insert(self.piles, aiHand)
@@ -70,9 +88,13 @@ function GameManager:initialize()
   local aiMana = ManaClass:new(80, 305, "ai")
   table.insert(self.manas, aiMana)
 
+  local aiScore = ScoreClass:new(40, 380, "ai")
+  table.insert(self.scores, aiScore)
+
   -- Game variables
   self.round = 1
   self.isInitialized = true
+  self.roundStart = true
 end
 
 function GameManager:createDeck()
@@ -130,6 +152,28 @@ function GameManager:update(dt)
   
   -- Update visual indicators for valid targets
   self:updateValidTargetHighlights()
+
+  -- Draw card at round start
+  if self.roundStart then
+    self:drawCardFor("player")
+    self.roundStart = false
+  end
+
+  if self.state == Constants.GAME_STATE.AI_TURN then
+    if self.aiState == Constants.AI_STATE.IDLE then
+      self.aiTimer = self.aiTimer - dt
+      if self.aiTimer <= 0 then
+        self.aiState = Constants.AI_STATE.ACTIVE
+        self.aiTimer = self.aiDuration
+      end
+    elseif self.aiState == Constants.AI_STATE.ACTIVE then
+      self:aiTurn()
+      self.aiState = Constants.AI_STATE.IDLE
+    end
+  elseif self.state == Constants.GAME_STATE.ATTACK then
+    self:updateAttack(dt)
+  end
+
 end
 
 function GameManager:updateValidTargetHighlights()
@@ -148,6 +192,35 @@ function GameManager:updateValidTargetHighlights()
   end
 end
 
+function GameManager:updateAttack(dt)
+  self.attackTimer = self.attackTimer - dt
+  
+  if self.attackTimer <= 0 then
+    if not self.cardsRevealed then
+      self:revealAllBoardCards()
+      self.cardsRevealed = true
+      self.attackTimer = self.attackDuration
+      self.endTurnButton.gamestate = Constants.GAME_STATE.ATTACK
+    else
+      self:attack()
+      self.attackTimer = self.attackDuration
+    end
+  end
+end
+
+function GameManager:revealAllBoardCards()
+  -- Reveal all cards on board piles
+  for _, pile in ipairs(self.piles) do
+    if pile.type == "board" then
+      for _, card in ipairs(pile.cards) do
+        card:setFaceUp()
+      end
+    end
+  end
+  
+  print("Cards revealed! Battle begins...")
+end
+
 function GameManager:draw()
   self.endTurnButton:draw()
 
@@ -157,6 +230,10 @@ function GameManager:draw()
 
   for _, mana in ipairs(self.manas) do
     mana:draw()
+  end
+
+  for _, score in ipairs(self.scores) do
+    score:draw()
   end
 
   -- Draw selection status
@@ -174,7 +251,7 @@ function GameManager:draw()
   end
 
   love.graphics.setColor(0, 0, 0, 1)
-  love.graphics.print("ROUND: " .. tostring(self.round), 20, Constants.WINDOW_HEIGHT / 2 - 10)
+  love.graphics.print("ROUND: " .. tostring(self.round), 40, Constants.WINDOW_HEIGHT / 2 - 25)
 end
 
 function GameManager:mousePressed(x, y, button)
@@ -190,21 +267,25 @@ function GameManager:mousePressed(x, y, button)
 
   -- Check end turn button
   if self.endTurnButton:checkForMouseOver(mousePos) then
-    if self.endTurnButton:mousePressed() then
-      self.state = Constants.GAME_STATE.AI_TURN
-      self.endTurnButton.gamestate = Constants.GAME_STATE.AI_TURN
-      self.round = self.round + 1
+    if self.endTurnButton:mousePressed() and self.state == Constants.GAME_STATE.YOUR_TURN then
 
-      for _, mana in ipairs(self.manas) do
-        mana:setMana(self.round)
+      -- Flip player cards to back
+      for _, pile in ipairs(self.piles) do
+        if pile.type == "board" and pile.owner == "player" then
+          for _, card in ipairs(pile.cards) do
+            if not card.active then
+              card:setFaceDown()
+              card.active = true
+            end
+          end
+        end
       end
 
+      self:drawCardFor("ai")
+      self.state = Constants.GAME_STATE.AI_TURN
+      self.endTurnButton.gamestate = Constants.GAME_STATE.AI_TURN
+
       self.selector:deselectCard()
-
-      self:aiPlay()
-
-      self.state = Constants.GAME_STATE.YOUR_TURN
-      self.endTurnButton.gamestate = Constants.GAME_STATE.YOUR_TURN
     end
     return
   end
@@ -231,7 +312,7 @@ function GameManager:mousePressed(x, y, button)
   else -- Nothing selected
     for _, pile in ipairs(self.piles) do
       if pile:checkForMouseOver(mousePos) and pile.owner == "player" then
-        if pile.type == "deck" then
+        if pile.type == "deck" and self.canDraw then
           pile:onClick()
           return
         end
@@ -244,10 +325,13 @@ function GameManager:mousePressed(x, y, button)
             self.selector:selectCard(card, pile)
           elseif card.cost <= mp then
             self.selector:selectCard(card, pile)
+          else -- Not enough mana
+            -- TODO: add visual tween
+            print("Not enough mana")
           end
           return
         else
-          print("Not enough mana")
+          -- DO NOTHING
         end
       end
     end
@@ -271,7 +355,7 @@ function GameManager:mouseReleased(x, y, button)
   end
 end
 
-function GameManager:aiPlay()
+function GameManager:aiTurn()
   local deckPile, handPile, aiMan = nil
   local boardPiles = {}
 
@@ -294,9 +378,12 @@ function GameManager:aiPlay()
   end
 
   local cardsToPlay = {}
+  local cardCostTotal = 0
   for _, card in ipairs(handPile.cards) do
+    -- cardCostTotal = cardCostTotal + card.cost
     if card.cost <= aiMana.mp and not card.wasPlaced then
       table.insert(cardsToPlay, card)
+      aiMana:useMana(card.cost)
     end
     -- TODO: modify depending on difficulty
     -- if #cardsToPlay >= 3 then break end
@@ -305,16 +392,98 @@ function GameManager:aiPlay()
 
   for i, card in ipairs(cardsToPlay) do
     for _, boardPile in ipairs(boardPiles) do
-      if #boardPile.cards == 0 then
+      if #boardPile.cards < 4 then
         boardPile:addCard(card)
         card.wasPlaced = true
-        card:setFaceUp()
-        aiMana:useMana(card.cost)
+        -- card:setFaceUp()
+        card:setFaceDown()
+        -- aiMana:useMana(card.cost)
         handPile:removeCard(card)
         break
       end
     end
   end
+
+  self.state = Constants.GAME_STATE.ATTACK
+end
+
+function GameManager:attack()
+  print("Attack in progress...")
+  
+  -- Get board piles for both players
+  local playerBoardPiles = {}
+  local aiBoardPiles = {}
+  
+  for _, pile in ipairs(self.piles) do
+    if pile.type == "board" then
+      if pile.owner == "player" then
+        table.insert(playerBoardPiles, pile)
+      elseif pile.owner == "ai" then
+        table.insert(aiBoardPiles, pile)
+      end
+    end
+  end
+  
+  -- Battle logic: compare cards in each position
+  for i = 1, math.min(#playerBoardPiles, #aiBoardPiles) do
+    local playerPile = playerBoardPiles[i]
+    local playerPileTotal = 0
+      
+    local aiPile = aiBoardPiles[i]
+    print(tostring(#aiBoardPiles[i].cards))
+    local aiPileTotal = 0
+
+    for _, card in ipairs(playerPile.cards) do
+      playerPileTotal = playerPileTotal + card.power
+    end
+
+    for _, card in ipairs(aiPile.cards) do
+      aiPileTotal = aiPileTotal + card.power
+      print("adding total of " .. tostring(card.name) .. " value: " .. tostring(card.power))
+    end
+
+    local playerCard = #playerPile.cards > 0 and playerPile.cards[1] or nil
+    local aiCard = #aiPile.cards > 0 and aiPile.cards[1] or nil
+    
+    self:battleCards(playerPileTotal, aiPileTotal, playerPile, aiPile)
+  end
+  
+  -- Reset for next round
+  self.cardsRevealed = false
+  self.state = Constants.GAME_STATE.YOUR_TURN
+  self.endTurnButton.gamestate = Constants.GAME_STATE.YOUR_TURN
+  self.roundStart = true
+  self:nextRound()
+end
+
+function GameManager:battleCards(playerPower, aiPower, playerPile, aiPile)
+  local playerPower = playerPower
+  local aiPower = aiPower
+
+  local points = 0
+  self.winner = nil
+  
+  print("Battle: (" .. tostring(playerPower) .. ") vs (" .. tostring(aiPower) .. ")")
+  
+  if playerPower > aiPower then
+    print("Player wins")
+    points = playerPower - aiPower
+    self.winner = "player"
+  elseif aiPower > playerPower then
+    print("AI wins")
+    points = aiPower - playerPower
+    self.winner = "ai"
+  else
+    print("Tie")
+    -- TODO: resolve tie
+  end
+
+  for _, score in ipairs(self.scores) do
+    if score.owner == self.winner then
+      score:modifyScore(points)
+    end
+  end
+
 end
 
 function GameManager:drawCardFor(owner)
@@ -330,13 +499,37 @@ function GameManager:drawCardFor(owner)
     end
   end
 
+  if #handPile.cards >= 7 then return false end
+
   if deckPile and handPile and #deckPile.cards > 0 then
     local card = deckPile:getTopCard()
     if card then
       deckPile:removeCard(card)
       handPile:addCard(card)
-      card:setFaceUp()
+      if owner == "player" then
+        card:setFaceUp()
+      else
+        card:setFaceDown()
+      end
     end
+  end
+end
+
+function GameManager:revealAllBoardCards()
+  for _, pile in ipairs(self.piles) do
+    if pile.type == "board" then
+      for _, card in ipairs(pile.cards) do
+        card:setFaceUp()
+      end
+    end
+  end
+end
+
+function GameManager:nextRound()
+  self.round = self.round + 1
+
+  for _, mana in ipairs(self.manas) do
+    mana:setMana(self.round)
   end
 end
 

@@ -49,5 +49,9 @@ function love.keypressed(key)
   if key == "q" then
     -- Quit game
     love.event.quit()
+  elseif key == "r" then
+    -- Restart game
+    game = GameManager:new()
+    game:initialize()
   end
 end

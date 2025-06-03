@@ -23,9 +23,14 @@ local Constants = {
   BUTTON_RADIUS = 20,
 
   GAME_STATE = {
-  YOUR_TURN = 0, -- Ends when end turn is tapped
+  YOUR_TURN = 0,
   AI_TURN = 1,
-  PLAY = 2,
+  ATTACK = 2,
+  },
+
+  AI_STATE = {
+    IDLE = 0,
+    ACTIVE = 1,
   },
 
 }

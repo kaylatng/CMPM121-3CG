@@ -30,7 +30,11 @@ end
 
 function ButtonClass:draw()
   if self.state ~= BUTTON_STATE.PRESSED then
-    love.graphics.setColor(1, 1, 1, 1)
+    if self.gamestate ~= Constants.GAME_STATE.YOUR_TURN then
+      love.graphics.setColor(0.5, 0.5, 0.5, 1)
+    else
+      love.graphics.setColor(1, 1, 1, 1)
+    end
     love.graphics.setLineWidth(1)
     love.graphics.rectangle("fill",
       Constants.BUTTON_X + 3, Constants.BUTTON_Y + 3,
@@ -48,7 +52,11 @@ function ButtonClass:draw()
     love.graphics.setColor(0, 0, 0, 1)
     love.graphics.print("END", Constants.BUTTON_X + 20, Constants.BUTTON_Y + 10)
   else 
-    love.graphics.setColor(1, 1, 1, 1)
+    if self.gamestate ~= Constants.GAME_STATE.YOUR_TURN then
+      love.graphics.setColor(0.5, 0.5, 0.5, 1)
+    else
+      love.graphics.setColor(1, 1, 1, 1)
+    end
     love.graphics.rectangle("fill",
       Constants.BUTTON_X + 3, Constants.BUTTON_Y + 3,
       Constants.BUTTON_WIDTH, Constants.BUTTON_HEIGHT,
@@ -64,16 +72,16 @@ function ButtonClass:draw()
   elseif self.gamestate == Constants.GAME_STATE.AI_TURN then
     love.graphics.printf("AI turn...", 0, Constants.WINDOW_HEIGHT - 60, Constants.WINDOW_WIDTH, "center")
   else -- Attack
-    love.graphics.printf("Attack...", 0, Constants.WINDOW_HEIGHT - 60, Constants.WINDOW_WIDTH, "center")
+    love.graphics.printf("Attack!", 0, Constants.WINDOW_HEIGHT - 60, Constants.WINDOW_WIDTH, "center")
   end
 
 end
 
 function ButtonClass:checkForMouseOver(mousePos)
   return mousePos.x > self.position.x and
-         mousePos.x < self.position.x + self.size.x and
-         mousePos.y > self.position.y and
-         mousePos.y < self.position.y + self.size.y
+        mousePos.x < self.position.x + self.size.x and
+        mousePos.y > self.position.y and
+        mousePos.y < self.position.y + self.size.y
 end
 
 function ButtonClass:mousePressed()

@@ -46,6 +46,7 @@ function CardClass:new(name, cardType, cost, power, text, id, xPos, yPos, faceUp
   card.faceUp = faceUp or false
   card.inPlay = inPlay or false
   card.wasPlaced = false
+  card.active = false
 
   card.state = CARD_STATE.IDLE
   card.hoverOffset = 15
