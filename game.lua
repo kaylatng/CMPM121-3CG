@@ -32,6 +32,7 @@ function GameManager:new()
   game.endTurnButton = ButtonClass:new(game.state)
   game.canDraw = false
   game.winner = nil
+  game.won = false
 
   -- AI turn variables
   game.aiDuration = 1
@@ -40,8 +41,8 @@ function GameManager:new()
 
   -- Attack phase variables
   game.cardsRevealed = false
-  game.attackDuration = 2
-  game.attackTimer = 2
+  game.attackDuration = 1
+  game.attackTimer = 1
 
   return game
 end
@@ -146,6 +147,10 @@ function GameManager:dealCards(deck, hand, piles, owner)
 end
 
 function GameManager:update(dt)
+  if self:checkForWin() then
+    self.won = true
+  end
+
   for _, pile in ipairs(self.piles) do
     pile:update(dt)
   end
@@ -252,6 +257,14 @@ function GameManager:draw()
 
   love.graphics.setColor(0, 0, 0, 1)
   love.graphics.print("ROUND: " .. tostring(self.round), 40, Constants.WINDOW_HEIGHT / 2 - 25)
+
+  if self.won then
+    love.graphics.setColor(0, 0, 0, 0.3)
+    love.graphics.rectangle("fill", 0, 0, Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf("You Win!", 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
+    love.graphics.printf("Press 'R' to play again", 0, love.graphics.getHeight() / 2 + 30, love.graphics.getWidth(), "center")
+  end
 end
 
 function GameManager:mousePressed(x, y, button)
@@ -531,6 +544,15 @@ function GameManager:nextRound()
   for _, mana in ipairs(self.manas) do
     mana:setMana(self.round)
   end
+end
+
+function GameManager:checkForWin()
+  for _, score in ipairs(self.scores) do
+    if score.owner == "player" and score.value >= 10 then
+      return true
+    end
+  end
+  return false
 end
 
 function shuffle(deck)
