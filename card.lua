@@ -143,8 +143,8 @@ function CardClass:draw()
   love.graphics.setColor(0, 0, 0, 1)
 
   if text then
-    love.graphics.printf(tostring(self.name), Constants.WINDOW_WIDTH / 2 - 700, Constants.WINDOW_HEIGHT - 200, 200)
-    love.graphics.printf(tostring(self.text), Constants.WINDOW_WIDTH / 2 - 700, Constants.WINDOW_HEIGHT - 150, 300)
+    love.graphics.printf(tostring(self.name), Constants.WINDOW_WIDTH / 2 - 600, Constants.WINDOW_HEIGHT - 200, 200)
+    love.graphics.printf(tostring(self.text), Constants.WINDOW_WIDTH / 2 - 600, Constants.WINDOW_HEIGHT - 150, 300)
   end
 
   font = love.graphics.newFont("assets/slkscr.ttf", 20)
@@ -314,13 +314,14 @@ end
 
 function CardClass:persephoneEffect(gameManager)
   -- Discard the lowest power card in your hand
-  local handPile = nil
+  local handPile, discardPile = nil
   local owner = self:getOwner(gameManager)
   
   for _, pile in ipairs(gameManager.piles) do
     if pile.type == "hand" and pile.owner == owner then
       handPile = pile
-      break
+    elseif pile.type == "discard" and pile.owner == owner then
+      discardPile = pile
     end
   end
   
@@ -332,6 +333,7 @@ function CardClass:persephoneEffect(gameManager)
       end
     end
     handPile:removeCard(lowestCard)
+    discardPile:addCard(lowestCard)
   end
 end
 

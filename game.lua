@@ -65,6 +65,9 @@ function GameManager:initialize()
     table.insert(self.piles, boardPile)
   end
 
+  local discard = DiscardPile:new(170, 800)
+  table.insert(self.piles, discard)
+
   local playerMana = ManaClass:new(80, 678)
   table.insert(self.manas, playerMana)
 
@@ -85,6 +88,9 @@ function GameManager:initialize()
     local aiBoardPile = BoardPile:new(700 + (i-1) * 130, 80, i, "ai")
     table.insert(self.piles, aiBoardPile)
   end
+
+  local aiDiscard = DiscardPile:new(170, 80)
+  table.insert(self.piles, aiDiscard)
 
   local aiMana = ManaClass:new(80, 305, "ai")
   table.insert(self.manas, aiMana)
@@ -555,6 +561,8 @@ function GameManager:endTurn()
         if card.type == "end-turn" then
           if card:onEndTurn(self) then
             boardPile:removeCard(card)
+            discardPile:addCard(card)
+            -- TODO change discard logic
           end
         end
       end

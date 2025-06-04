@@ -316,9 +316,6 @@ function DiscardPile:new(x, y, owner)
   local metadata = {__index = DiscardPile}
   setmetatable(pile, metadata)
   
-  pile.horizontalOffset = 20
-  pile.size.x = pile.size.x + 3 * 20
-  
   return pile
 end
 
