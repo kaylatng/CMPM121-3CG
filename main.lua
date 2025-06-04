@@ -17,7 +17,7 @@ local font
 
 function love.load()
   love.window.setMode(Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT)
-  love.window.setTitle("3CG") -- kairos
+  love.window.setTitle("Kairos (3CG)")
   love.graphics.setBackgroundColor(background)
 
   font = love.graphics.newFont("assets/slkscr.ttf", 18)

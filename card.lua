@@ -47,6 +47,7 @@ function CardClass:new(name, cardType, cost, power, text, id, xPos, yPos, faceUp
   card.inPlay = inPlay or false
   card.wasPlaced = false
   card.active = false
+  card.hasTriggered = false
 
   card.state = CARD_STATE.IDLE
   card.hoverOffset = 15
@@ -230,6 +231,7 @@ function CardClass:onReveal(gameManager, boardPile)
   end
 end
 
+-- NEED TO FIX
 function CardClass:onCardPlayedHere(otherCard, gameManager, boardPile)
   if self.type ~= "reactive" then return end
   
@@ -280,7 +282,7 @@ function CardClass:daedalusEffect(gameManager)
 end
 
 function CardClass:hephaestusEffect(gameManager)
-  -- Lower the cost of 2 cards in your hand by 1
+  -- Lower the cost of 2 cards in your hand by 1 (BOTTOM 2)
   local handPile = nil
   local owner = self:getOwner(gameManager)
   
@@ -295,6 +297,7 @@ function CardClass:hephaestusEffect(gameManager)
     local cardsReduced = 0
     for _, card in ipairs(handPile.cards) do
       if cardsReduced < 2 and card.cost > 0 then
+        print("REDUCING " .. tostring(card.name))
         card.cost = card.cost - 1
         cardsReduced = cardsReduced + 1
       end
@@ -334,10 +337,15 @@ end
 function CardClass:aphroditeEffect(gameManager, boardPile)
   -- Lower the power of each enemy card here by 1
   local owner = self:getOwner(gameManager)
-  local enemyOwner = (owner == "player") and "ai" or "player"
-  
+  local enemyOwner
+  if owner == "player" then
+    enemyOwner = "ai"
+  else
+    enemyOwner = "player"
+  end
+
   for _, pile in ipairs(gameManager.piles) do
-    if pile.type == "board" and pile.owner == enemyOwner and pile.position == boardPile.position then
+    if pile.type == "board" and pile.owner == enemyOwner and pile.index == boardPile.index then
       for _, card in ipairs(pile.cards) do
         if card.power > 0 then
           card.power = card.power - 1
@@ -355,7 +363,7 @@ function CardClass:aresEffect(gameManager, boardPile)
   local enemyCardCount = 0
   
   for _, pile in ipairs(gameManager.piles) do
-    if pile.type == "board" and pile.owner == enemyOwner and pile.position == boardPile.position then
+    if pile.type == "board" and pile.owner == enemyOwner and pile.index == boardPile.index then
       enemyCardCount = #pile.cards
       break
     end
@@ -370,7 +378,7 @@ function CardClass:apolloEffect(gameManager)
   
   for _, mana in ipairs(gameManager.manas) do
     if mana.owner == owner then
-      mana.bonusMana = (mana.bonusMana or 0) + 1
+      mana:addBonusMana(1)
       break
     end
   end

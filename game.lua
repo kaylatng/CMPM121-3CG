@@ -82,8 +82,8 @@ function GameManager:initialize()
   self:dealCards(aiDeck, aiHand, self.piles, "ai")
 
   for i = 1, 4 do
-    local boardPile = BoardPile:new(700 + (i-1) * 130, 80, i, "ai")
-    table.insert(self.piles, boardPile)
+    local aiBoardPile = BoardPile:new(700 + (i-1) * 130, 80, i, "ai")
+    table.insert(self.piles, aiBoardPile)
   end
 
   local aiMana = ManaClass:new(80, 305, "ai")
@@ -218,19 +218,6 @@ function GameManager:updateAttack(dt)
       self.attackTimer = self.attackDuration
     end
   end
-end
-
-function GameManager:revealAllBoardCards()
-  -- Reveal all cards on board piles
-  for _, pile in ipairs(self.piles) do
-    if pile.type == "board" then
-      for _, card in ipairs(pile.cards) do
-        card:setFaceUp()
-      end
-    end
-  end
-  
-  print("Cards revealed! Battle begins...")
 end
 
 function GameManager:draw()
@@ -473,7 +460,7 @@ function GameManager:attack()
   self.state = Constants.GAME_STATE.YOUR_TURN
   self.endTurnButton.gamestate = Constants.GAME_STATE.YOUR_TURN
   self.roundStart = true
-  self:nextRound()
+  self:endTurn()
 end
 
 function GameManager:battleCards(playerPower, aiPower, playerPile, aiPile)
@@ -538,24 +525,40 @@ end
 function GameManager:revealAllBoardCards()
   for _, pile in ipairs(self.piles) do
     if pile.type == "board" then
+      local boardPile = pile
       for _, card in ipairs(pile.cards) do
         card:setFaceUp()
+        if card.type == "reveal" then
+          card:onReveal(self, boardPile)
+        end
       end
     end
   end
 end
 
-function GameManager:nextRound()
+function GameManager:endTurn()
   self.round = self.round + 1
 
   for _, mana in ipairs(self.manas) do
-    mana:setMana(self.round)
+    mana:setMana(self.round + mana.bonusMana)
+    mana:resetBonusMana()
+  end
+
+  for _, pile in ipairs(self.piles) do
+    if pile.type == "board" then
+      local boardPile = pile
+      for _, card in ipairs(pile.cards) do
+        if card.type == "end-turn" then
+          card:onEndTurn(self, boardPile)
+        end
+      end
+    end
   end
 end
 
 function GameManager:checkForWin()
   for _, score in ipairs(self.scores) do
-    if score.owner == "player" and score.value >= 10 then
+    if score.owner == "player" and score.value >= 25 then
       return true
     end
   end

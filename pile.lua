@@ -303,6 +303,10 @@ function BoardPile:acceptCards(cards, sourcePile)
   return true
 end
 
+function BoardPile:getIndex()
+  return self.index
+end
+
 -- Discard
 DiscardPile = {}
 setmetatable(DiscardPile, {__index = PileClass})

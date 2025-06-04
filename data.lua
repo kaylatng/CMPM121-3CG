@@ -6,7 +6,7 @@ local Data = {
 
   {
     name = "Athena",
-    type = "reactive",
+    util = "reactive",
     cost = 2,
     power = 3,
     text = "Gain +1 power when you play another card here.",
@@ -14,7 +14,7 @@ local Data = {
   },
   {
     name = "Daedalus",
-    type = "reveal",
+    util = "reveal",
     cost = 3,
     power = 3,
     text = "When Revealed: Add a Wooden Cow to each other location.",
@@ -22,7 +22,7 @@ local Data = {
   },
   {
     name = "Hephaestus",
-    type = "reveal",
+    util = "reveal",
     cost = 2,
     power = 4,
     text = "When Revealed: Lower the cost of 2 cards in your hand by 1.",
@@ -30,7 +30,7 @@ local Data = {
   },
   {
     name = "Icarus",
-    type = "end-turn",
+    util = "end-turn",
     cost = 1,
     power = 1,
     text = "End of Turn: Gains +1 power, but is discarded when its power is greater than 7.",
@@ -38,7 +38,7 @@ local Data = {
   }, 
   {
     name = "Demeter",
-    type = "reveal",
+    util = "reveal",
     cost = 1,
     power = 2,
     text = "When Revealed: Both players draw a card.",
@@ -46,7 +46,7 @@ local Data = {
   },
   {
     name = "Medusa",
-    type = "reactive",
+    util = "reactive",
     cost = 5,
     power = 7,
     text = "When ANY other card is played here, lower that card's power by 1.",
@@ -54,7 +54,7 @@ local Data = {
   },
   {
     name = "Persephone",
-    type = "reveal",
+    util = "reveal",
     cost = 4,
     power = 5,
     text = "When Revealed: Discard the lowest power card in your hand.",
@@ -62,7 +62,7 @@ local Data = {
   },
   {
     name = "Aphrodite",
-    type = "reveal",
+    util = "reveal",
     cost = 4,
     power = 4,
     text = "When Revealed: Lower the power of each enemy card here by 1.",
@@ -70,7 +70,7 @@ local Data = {
   },
   {
     name = "Wooden Cow",
-    type = "vanilla",
+    util = "vanilla",
     cost = 1,
     power = 1,
     text = "Vanilla",
@@ -78,7 +78,7 @@ local Data = {
   },
   {
     name = "Ares",
-    type = "reveal",
+    util = "reveal",
     cost = 6,
     power = 7,
     text = "When Revealed: Gain +2 power for each enemy card here.",
@@ -86,7 +86,7 @@ local Data = {
   },
   {
     name = "Apollo",
-    type = "reveal",
+    util = "reveal",
     cost = 1,
     power = 1,
     text = "When Revealed: Gain +1 mana next turn.",
