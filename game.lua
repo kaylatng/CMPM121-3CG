@@ -117,7 +117,14 @@ function GameManager:createDeck()
 
   shuffle(deck)
 
-  return deck
+  -- return deck
+
+  local result = {}
+  for i = 1, 20 do
+    result[i] = deck[i]
+  end
+
+  return result
 end
 
 function GameManager:dealCards(deck, hand, piles, owner)

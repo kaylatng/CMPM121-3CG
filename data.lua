@@ -84,6 +84,14 @@ local Data = {
     text = "When Revealed: Gain +2 power for each enemy card here.",
     id = 10,
   },
+  {
+    name = "Apollo",
+    type = "reveal",
+    cost = 1,
+    power = 1,
+    text = "When Revealed: Gain +1 mana next turn.",
+    id = 11,
+  },
 }
 
 return Data

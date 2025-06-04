@@ -13,6 +13,8 @@ function ManaClass:new(xPos, yPos, owner)
   mana.position = Vector(xPos, yPos)
   mana.size = Vector(50, 50)
   mana.owner = owner or "player"
+
+  mana.bonusMana = 0
   mana.mp = 1
 
   return mana
@@ -37,4 +39,12 @@ end
 
 function ManaClass:useMana(amount)
   self.mp = math.max(0, self.mp - amount)
+end
+
+function ManaClass:addBonusMana(amount)
+  self.bonusMana = (self.bonusMana or 0) + amount
+end
+
+function ManaClass:resetBonusMana()
+  self.bonusMana = 0
 end

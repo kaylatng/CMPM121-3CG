@@ -12,10 +12,10 @@ function PileClass:new(x, y, pileType, owner)
   
   pile.position = Vector(x, y)
   pile.cards = {}
-  pile.type = pileType -- Possible types: deck, hand, board, discard
+  pile.type = pileType -- deck, hand, board, discard
   pile.size = Vector(Constants.PILE_WIDTH, Constants.PILE_HEIGHT)
 
-  pile.owner = owner or "player" -- Possible types: ai or player
+  pile.owner = owner or "player" -- ai or player
   pile.highlighted = false -- For showing valid drop targets
   
   return pile
@@ -303,13 +303,13 @@ function BoardPile:acceptCards(cards, sourcePile)
   return true
 end
 
--- Waste
-WastePile = {}
-setmetatable(WastePile, {__index = PileClass})
+-- Discard
+DiscardPile = {}
+setmetatable(DiscardPile, {__index = PileClass})
 
-function WastePile:new(x, y, owner)
-  local pile = PileClass:new(x, y, "waste", owner)
-  local metadata = {__index = WastePile}
+function DiscardPile:new(x, y, owner)
+  local pile = PileClass:new(x, y, "discard", owner)
+  local metadata = {__index = DiscardPile}
   setmetatable(pile, metadata)
   
   pile.horizontalOffset = 20
@@ -318,7 +318,7 @@ function WastePile:new(x, y, owner)
   return pile
 end
 
-function WastePile:getCardAt(mousePos)
+function DiscardPile:getCardAt(mousePos)
   if #self.cards > 0 then
     local topCard = self.cards[#self.cards]
     if mousePos.x > topCard.position.x and
