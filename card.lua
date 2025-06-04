@@ -48,6 +48,7 @@ function CardClass:new(name, cardType, cost, power, text, id, xPos, yPos, faceUp
   card.wasPlaced = false
   card.active = false
   card.hasTriggered = false
+  card.basePower = power
 
   card.state = CARD_STATE.IDLE
   card.hoverOffset = 15
@@ -232,13 +233,13 @@ function CardClass:onReveal(gameManager, boardPile)
 end
 
 -- NEED TO FIX
-function CardClass:onCardPlayedHere(otherCard, gameManager, boardPile)
-  if self.type ~= "reactive" then return end
+function CardClass:onCardPlayed(gameManager, boardPile)
+  if self.type ~= "reactive" or self.hasTriggered then return end
   
   if self.name == "Athena" then
-    self:athenaEffect(otherCard)
+    self:athenaEffect(gameManager, boardPile)
   elseif self.name == "Medusa" then
-    self:medusaEffect(otherCard)
+    self:medusaEffect(gameManager, boardPile)
   end
 end
 
@@ -384,17 +385,50 @@ function CardClass:apolloEffect(gameManager)
   end
 end
 
-function CardClass:athenaEffect(otherCard)
+function CardClass:athenaEffect(gameManager, boardPile)
   -- Gain +1 power when you play another card here
-  if otherCard ~= self then
-    self.power = self.power + 1
+  local owner = self:getOwner(gameManager)
+  local isAtCorrectPile = false
+
+  for _, pile in ipairs(gameManager.piles) do
+    if pile.type == "board" and pile.owner == owner and pile.index == boardPile.index then
+      isAtCorrectPile = true
+       if #pile.cards > 1 then
+        self.power = self.basePower + 1
+        self.hasTriggered = true
+      else
+        self.power = self.basePower
+      end
+    end
+  end
+
+  if not isAtCorrectPile then
+    self.power = self.basePower
   end
 end
 
-function CardClass:medusaEffect(otherCard)
+function CardClass:medusaEffect(gameManager, boardPile)
   -- When ANY other card is played here, lower that card's power by 1
-  if otherCard ~= self and otherCard.power > 0 then
-    otherCard.power = otherCard.power - 1
+  -- if otherCard ~= self and otherCard.power > 0 then
+  --   otherCard.power = otherCard.power - 1
+  -- end
+  local owner = self:getOwner(gameManager)
+  local isAtCorrectPile = false
+
+  for _, pile in ipairs(gameManager.piles) do
+    if pile.type == "board" and pile.owner == owner and pile.index == boardPile.index then
+      isAtCorrectPile = true
+       if #pile.cards > 1 then
+        self.power = self.basePower - 1
+        self.hasTriggered = true
+      else
+        self.power = self.basePower
+      end
+    end
+  end
+
+  if not isAtCorrectPile then
+    self.power = self.basePower
   end
 end
 

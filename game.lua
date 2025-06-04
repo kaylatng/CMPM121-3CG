@@ -284,6 +284,10 @@ function GameManager:mousePressed(x, y, button)
               card:setFaceDown()
               card.active = true
             end
+
+            if card.type == "reactive" then
+              card:onCardPlayed(self, pile)
+            end
           end
         end
       end
@@ -549,7 +553,9 @@ function GameManager:endTurn()
       local boardPile = pile
       for _, card in ipairs(pile.cards) do
         if card.type == "end-turn" then
-          card:onEndTurn(self, boardPile)
+          if card:onEndTurn(self) then
+            boardPile:removeCard(card)
+          end
         end
       end
     end
