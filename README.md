@@ -14,7 +14,7 @@ _Description from canvas assignment._ This project's goal is to make a CCCG (Cas
 
 State Pattern - Used for game states (ex: YOUR_TURN, AI_TURN), card states (ex: IDLE, MOUSE_OVER, SELECTED), and button states (IDLE, PRESSED).
 
-Component Pattern - Game objects (card, pile, button) use component systems (position vector, rendering/drawing every frame, behavior functions).
+Component Pattern - Game objects (card, pile, button) use component systems (position vect or, rendering/drawing every frame, behavior functions).
 
 Object Pool Pattern - Cards are created once in initialize and moved between card piles (board, hand, deck) instead of being created/destroyed every frame.
 

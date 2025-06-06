@@ -65,7 +65,7 @@ function GameManager:initialize()
     table.insert(self.piles, boardPile)
   end
 
-  local discard = DiscardPile:new(170, 800)
+  local discard = DiscardPile:new(170, 800, "player")
   table.insert(self.piles, discard)
 
   local playerMana = ManaClass:new(80, 678)
@@ -89,7 +89,7 @@ function GameManager:initialize()
     table.insert(self.piles, aiBoardPile)
   end
 
-  local aiDiscard = DiscardPile:new(170, 80)
+  local aiDiscard = DiscardPile:new(170, 80, "ai")
   table.insert(self.piles, aiDiscard)
 
   local aiMana = ManaClass:new(80, 305, "ai")
@@ -262,7 +262,11 @@ function GameManager:draw()
     love.graphics.setColor(0, 0, 0, 0.3)
     love.graphics.rectangle("fill", 0, 0, Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT)
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.printf("You Win!", 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
+    if self.winner == "player" then
+      love.graphics.printf("You Win!", 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
+    else
+      love.graphics.printf("You Lose!", 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
+    end
     love.graphics.printf("Press 'R' to play again", 0, love.graphics.getHeight() / 2 + 30, love.graphics.getWidth(), "center")
   end
 end
@@ -562,7 +566,6 @@ function GameManager:endTurn()
           if card:onEndTurn(self) then
             boardPile:removeCard(card)
             discardPile:addCard(card)
-            -- TODO change discard logic
           end
         end
       end
@@ -573,6 +576,11 @@ end
 function GameManager:checkForWin()
   for _, score in ipairs(self.scores) do
     if score.owner == "player" and score.value >= 25 then
+      self.winner = "player"
+      return true
+    end
+    if score.owner == "ai" and score.value >= 25 then
+      self.winner = "ai"
       return true
     end
   end

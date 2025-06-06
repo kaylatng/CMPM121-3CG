@@ -144,7 +144,7 @@ function PileClass:updateCardPositions()
       card.faceUp = false
     end
 
-  else -- Hand pile
+  elseif self.type == "hand" then
     local visibleCards = math.min(7, #self.cards)
 
     for i = 1, #self.cards do
@@ -172,6 +172,13 @@ function PileClass:updateCardPositions()
       
       card.targetPosition = newPos
       card:setBasePosition(newPos.x, newPos.y)
+    end
+  else -- Discard
+    for i, card in ipairs(self.cards) do
+      local newPos = Vector(self.position.x, self.position.y)
+      card.targetPosition = newPos
+      card:setBasePosition(newPos.x, newPos.y)
+      card.faceUp = true
     end
   end
 end

@@ -333,7 +333,7 @@ function CardClass:persephoneEffect(gameManager)
       end
     end
     handPile:removeCard(lowestCard)
-    discardPile:addCard(lowestCard)
+    -- discardPile:addCard(lowestCard)
   end
 end
 
@@ -411,9 +411,6 @@ end
 
 function CardClass:medusaEffect(gameManager, boardPile)
   -- When ANY other card is played here, lower that card's power by 1
-  -- if otherCard ~= self and otherCard.power > 0 then
-  --   otherCard.power = otherCard.power - 1
-  -- end
   local owner = self:getOwner(gameManager)
   local isAtCorrectPile = false
 
